@@ -162,3 +162,14 @@ force-down: ## Force stop services (skip dependency check)
 
 force-logs: ## Force view logs (skip dependency check)
 	$(DOCKER_COMPOSE) logs -f
+
+# Container maintenance
+rebuild: check-deps ## Rebuild Laravel container and restart
+	$(DOCKER_COMPOSE) down
+	docker rmi sail-8.4/app 2>/dev/null || true
+	$(DOCKER_COMPOSE) build --no-cache laravel.test
+	$(DOCKER_COMPOSE) up -d
+
+quick-fix: ## Quick fix for container restart issues
+	@chmod +x ./scripts/quick-fix.sh
+	@./scripts/quick-fix.sh
