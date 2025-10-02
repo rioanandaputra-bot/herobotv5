@@ -177,3 +177,7 @@ quick-fix: ## Quick fix for container restart issues
 ultimate-fix: ## Ultimate fix for all container issues
 	@chmod +x ./scripts/ultimate-fix.sh
 	@./scripts/ultimate-fix.sh
+
+fix-port-conflict: ## Fix port conflicts and suggest alternatives
+	@chmod +x ./scripts/fix-port-conflict.sh
+	@./scripts/fix-port-conflict.sh

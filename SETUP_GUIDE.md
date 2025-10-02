@@ -151,10 +151,10 @@ make logs-db
 ### Port already in use
 ```bash
 # Check what's using the ports
-sudo netstat -tlnp | grep -E ':8080|:3306|:6379'
+sudo netstat -tlnp | grep -E ':8082|:3306|:6379'
 
 # Kill processes using the ports if needed
-sudo fuser -k 8080/tcp
+sudo fuser -k 8082/tcp
 sudo fuser -k 3306/tcp
 sudo fuser -k 6379/tcp
 ```
@@ -189,7 +189,7 @@ make up
 ## 🔗 Useful URLs
 
 After successful setup:
-- **Application**: http://your-server-ip:8080
+- **Application**: http://your-server-ip:8082
 - **Database**: your-server-ip:3306
 - **Redis**: your-server-ip:6379
 

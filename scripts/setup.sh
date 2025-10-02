@@ -257,7 +257,7 @@ main() {
     echo "  make shell          - Access application shell"
     echo "  make health         - Check service health"
     echo ""
-    print_status "Access your application at: http://$(hostname -I | awk '{print $1}'):8080"
+    print_status "Access your application at: http://$(hostname -I | awk '{print $1}'):8082"
 }
 
 # Run main function

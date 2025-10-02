@@ -80,7 +80,7 @@ cp .env.example .env
 make dev-setup
 
 # 4. Access application
-# Open http://localhost:8080 in your browser
+# Open http://localhost:8082 in your browser
 ```
 
 #### Common Commands
