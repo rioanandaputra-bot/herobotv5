@@ -63,6 +63,40 @@ else
     echo "Vendor directory already exists, skipping composer install"
 fi
 
+# Install Node.js dependencies if node_modules doesn't exist
+if [ ! -d "node_modules" ]; then
+    echo "Installing Node.js dependencies..."
+    if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
+        npm install
+    else
+        gosu "${WWWUSER}" npm install
+    fi
+else
+    echo "Node modules already exist, skipping npm install"
+fi
+
+# Install WhatsApp server dependencies
+if [ ! -d "whatsapp-server/node_modules" ]; then
+    echo "Installing WhatsApp server dependencies..."
+    if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
+        cd whatsapp-server && npm install && cd ..
+    else
+        gosu "${WWWUSER}" bash -c "cd whatsapp-server && npm install && cd .."
+    fi
+else
+    echo "WhatsApp server dependencies already exist"
+fi
+
+# Fix public directory permissions for FrankenPHP
+echo "Setting up public directory permissions..."
+mkdir -p public
+chmod -R 755 public
+if [ ! -z "$WWWUSER" ] && [ ! -z "$WWWGROUP" ]; then
+    chown -R $WWWUSER:$WWWGROUP public
+else
+    chown -R 1000:1000 public
+fi
+
 # Generate application key only if needed
 echo "Checking APP_KEY..."
 

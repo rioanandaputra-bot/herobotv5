@@ -186,4 +186,8 @@ fix-permissions: ## Fix Docker container permission issues
 	@echo "🔧 Fixing container permissions..."
 	@./scripts/fix-permissions.sh
 
+fix-services: ## Fix all Docker services (permissions, dependencies, etc.)
+	@echo "🔧 Fixing all services..."
+	@./scripts/fix-services.sh
+
 backup: ## Create backup of important files
