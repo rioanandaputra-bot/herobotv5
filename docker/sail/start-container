@@ -65,16 +65,43 @@ fi
 
 # Generate application key only if needed
 echo "Checking APP_KEY..."
+
+# Create .env file if it doesn't exist
+if [ ! -f .env ]; then
+    echo "Creating .env file from .env.example..."
+    cp .env.example .env
+fi
+
+# Fix .env file permissions
+echo "Setting proper permissions for .env file..."
+chmod 664 .env
+if [ ! -z "$WWWUSER" ] && [ ! -z "$WWWGROUP" ]; then
+    chown $WWWUSER:$WWWGROUP .env
+else
+    chown 1000:1000 .env
+fi
+
+# Check if APP_KEY is set
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
 fi
-if [ -z "$APP_KEY" ]; then
+
+if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
     echo "No APP_KEY found. Generating..."
     
+    # Generate key using the correct user
     if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
         php artisan key:generate --force
     else
         gosu "${WWWUSER}" php artisan key:generate --force
+    fi
+    
+    # Fix permissions again after key generation
+    chmod 664 .env
+    if [ ! -z "$WWWUSER" ] && [ ! -z "$WWWGROUP" ]; then
+        chown $WWWUSER:$WWWGROUP .env
+    else
+        chown 1000:1000 .env
     fi
 else
     echo "APP_KEY already exists!"

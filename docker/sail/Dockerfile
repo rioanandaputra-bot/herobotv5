@@ -88,6 +88,10 @@ RUN sed -i 's/\r$//' /etc/supervisor/conf.d/supervisord.conf
 RUN sed -i 's/\r$//' /etc/php/8.4/cli/conf.d/99-sail.ini
 RUN chmod +x /usr/local/bin/start-container
 
+# Ensure proper permissions for work directory
+RUN chown -R $WWWUSER:$WWWGROUP /var/www/html
+RUN chmod -R 755 /var/www/html
+
 EXPOSE 8082
 
 ENTRYPOINT ["start-container"]
