@@ -6,6 +6,10 @@ services:
             args:
                 WWWUSER: '${WWWUSER:-1000}'
                 WWWGROUP: '${WWWGROUP:-1000}'
+            # Enable build cache and parallel builds
+            cache_from:
+                - sail-8.4/app:latest
+            target: final
         image: sail-8.4/app
         extra_hosts:
             - 'host.docker.internal:host-gateway'

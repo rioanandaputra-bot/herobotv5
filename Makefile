@@ -190,4 +190,8 @@ fix-services: ## Fix all Docker services (permissions, dependencies, etc.)
 	@echo "🔧 Fixing all services..."
 	@./scripts/fix-services.sh
 
+optimize-build: ## Optimize Docker build process and caching
+	@echo "🚀 Optimizing Docker build..."
+	@./scripts/optimize-build.sh
+
 backup: ## Create backup of important files

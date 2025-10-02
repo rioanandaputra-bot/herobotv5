@@ -9,11 +9,15 @@ README.md
 *.md
 docs/
 
-# Dependencies
+# Dependencies (exclude from build context for faster builds)
 node_modules/
 vendor/
-composer.lock
+
+# Keep essential lock files for reproducible builds
+# composer.lock - KEEP for PHP dependencies
 package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # Development files
 .env*
@@ -29,25 +33,46 @@ package-lock.json
 .DS_Store
 Thumbs.db
 
-# Laravel
+# Laravel runtime files (not needed for build)
 storage/app/*
+!storage/app/.gitignore
+!storage/app/public/.gitignore
 storage/framework/cache/*
+!storage/framework/cache/.gitignore
 storage/framework/sessions/*
+!storage/framework/sessions/.gitignore
 storage/framework/views/*
+!storage/framework/views/.gitignore
 storage/logs/*
+!storage/logs/.gitignore
 bootstrap/cache/*
+!bootstrap/cache/.gitignore
 
-# Build artifacts
+# Build artifacts (will be generated)
 public/hot
 public/storage
 public/css/
 public/js/
 public/mix-manifest.json
+public/build/
 
-# Testing
+# Testing (not needed in production)
 tests/
 .phpunit.result.cache
 coverage/
+
+# Development configuration (not needed in container)
+postcss.config.js
+tailwind.config.js
+vite.config.js
+jsconfig.json
+.eslintrc.*
+.prettier*
+
+# Logs and temp files
+*.log
+.tmp/
+.cache/
 
 # Development tools
 phpunit.xml
