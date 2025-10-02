@@ -12,7 +12,7 @@ services:
         ports:
             - '${APP_PORT:-8080}:8080'
             - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
-            - '${REVERB_SERVER_PORT:-8080}:${REVERB_SERVER_PORT:-8080}'
+            - '${REVERB_SERVER_PORT:-8081}:8081'
             - '${WHATSAPP_PORT:-3000}:3000'
         environment:
             WWWUSER: '${WWWUSER:-1000}'

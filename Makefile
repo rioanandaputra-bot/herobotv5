@@ -173,3 +173,7 @@ rebuild: check-deps ## Rebuild Laravel container and restart
 quick-fix: ## Quick fix for container restart issues
 	@chmod +x ./scripts/quick-fix.sh
 	@./scripts/quick-fix.sh
+
+ultimate-fix: ## Ultimate fix for all container issues
+	@chmod +x ./scripts/ultimate-fix.sh
+	@./scripts/ultimate-fix.sh

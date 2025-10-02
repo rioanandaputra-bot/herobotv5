@@ -29,37 +29,41 @@ if [ -f .env.example ]; then
     sed -i 's/\r$//' .env.example
 fi
 
-# Create storage directories with proper permissions
+# Create storage directories with proper permissions first
 mkdir -p storage/logs
 mkdir -p storage/framework/{cache,sessions,views}
 mkdir -p storage/app/public
-chmod -R 775 storage
+mkdir -p bootstrap/cache
+mkdir -p vendor
+
+# Set proper ownership and permissions BEFORE composer install
+chmod -R 775 storage bootstrap/cache
 if [ ! -z "$WWWUSER" ] && [ ! -z "$WWWGROUP" ]; then
-    chown -R $WWWUSER:$WWWGROUP storage
+    chown -R $WWWUSER:$WWWGROUP storage bootstrap/cache vendor
 else
-    chown -R 1000:1000 storage
+    chown -R 1000:1000 storage bootstrap/cache vendor
 fi
 
-# Run composer install with optimization flags
-echo "Installing Composer dependencies..."
-if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
-    composer install --optimize-autoloader --no-dev --no-scripts
-    composer dump-autoload --optimize
+# Only run composer install if vendor directory is empty or autoload.php doesn't exist
+if [ ! -f "vendor/autoload.php" ]; then
+    echo "Installing Composer dependencies..."
+    
+    # Clear composer cache first
+    composer clear-cache
+    
+    # Run composer install with proper flags
+    if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
+        composer install --no-interaction --prefer-dist --no-scripts --no-plugins
+        composer dump-autoload --optimize --no-scripts
+    else
+        gosu $WWWUSER composer install --no-interaction --prefer-dist --no-scripts --no-plugins
+        gosu $WWWUSER composer dump-autoload --optimize --no-scripts
+    fi
 else
-    gosu $WWWUSER composer install --optimize-autoloader --no-dev --no-scripts
-    gosu $WWWUSER composer dump-autoload --optimize
+    echo "Vendor directory already exists, skipping composer install"
 fi
 
-# Run npm install with cache optimization
-echo "Installing NPM dependencies..."
-if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
-    npm ci --prefer-offline --no-audit
-    cd whatsapp-server && npm ci --prefer-offline --no-audit && cd ..
-else
-    gosu $WWWUSER bash -c 'npm ci --prefer-offline --no-audit && cd whatsapp-server && npm ci --prefer-offline --no-audit && cd ..'
-fi
-
-# Generate application key
+# Generate application key only if needed
 echo "Checking APP_KEY..."
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
@@ -76,37 +80,30 @@ else
     echo "APP_KEY already exists!"
 fi
 
-# Wait for database to be ready
-echo "Waiting for database connection..."
-until php artisan tinker --execute="DB::connection()->getPdo();" 2>/dev/null; do
-    echo "Waiting for database..."
+# Wait for database to be ready (only check, don't run migrations)
+echo "Checking database connection..."
+for i in {1..30}; do
+    if php artisan tinker --execute="DB::connection()->getPdo();" 2>/dev/null; then
+        echo "Database connection successful"
+        break
+    fi
+    echo "Waiting for database... ($i/30)"
     sleep 2
 done
 
-# Run migrations and seeders only in development
-if [ "${APP_ENV:-local}" = "local" ]; then
-    echo "Running migrations and seeders..."
+# Only run migrations in development and if they haven't been run
+if [ "${APP_ENV:-local}" = "local" ] && [ ! -f "storage/migrations_run" ]; then
+    echo "Running migrations (first time setup)..."
     if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
-        php artisan migrate --force
+        php artisan migrate --force && touch storage/migrations_run
         php artisan db:seed --force
     else
-        gosu $WWWUSER php artisan migrate --force
+        gosu $WWWUSER php artisan migrate --force && touch storage/migrations_run
         gosu $WWWUSER php artisan db:seed --force
     fi
 fi
 
-# Clear and cache config for better performance
-echo "Optimizing Laravel..."
-if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
-    php artisan config:cache
-    php artisan route:cache
-    php artisan view:cache
-else
-    gosu $WWWUSER php artisan config:cache
-    gosu $WWWUSER php artisan route:cache
-    gosu $WWWUSER php artisan view:cache
-fi
-
+echo "Starting supervisord..."
 if [ $# -gt 0 ]; then
     if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
         exec "$@"
