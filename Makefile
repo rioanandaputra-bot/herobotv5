@@ -178,6 +178,12 @@ ultimate-fix: ## Ultimate fix for all container issues
 	@chmod +x ./scripts/ultimate-fix.sh
 	@./scripts/ultimate-fix.sh
 
-fix-port-conflict: ## Fix port conflicts and suggest alternatives
-	@chmod +x ./scripts/fix-port-conflict.sh
+fix-port-conflict: ## Fix port conflicts by changing to port 8082
+	@echo "🔧 Fixing port conflicts..."
 	@./scripts/fix-port-conflict.sh
+
+fix-permissions: ## Fix Docker container permission issues
+	@echo "🔧 Fixing container permissions..."
+	@./scripts/fix-permissions.sh
+
+backup: ## Create backup of important files
