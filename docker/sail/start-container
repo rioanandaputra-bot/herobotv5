@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ "$SUPERVISOR_PHP_USER" != "root" ] && [ "$SUPERVISOR_PHP_USER" != "sail" ]; then
+    echo "You should set SUPERVISOR_PHP_USER to either 'sail' or 'root'."
+    exit 1
+fi
+
+if [ ! -z "$WWWUSER" ]; then
+    usermod -u $WWWUSER sail
+fi
+
+if [ ! -d /.composer ]; then
+    mkdir /.composer
+fi
+
+chmod -R ugo+rw /.composer
+
+# Fix line endings in .env files if they exist
+if [ -f .env ]; then
+    sed -i 's/\r$//' .env
+fi
+if [ -f .env.example ]; then
+    sed -i 's/\r$//' .env.example
+fi
+
+# Create storage directories with proper permissions
+mkdir -p storage/logs
+mkdir -p storage/framework/{cache,sessions,views}
+mkdir -p storage/app/public
+chmod -R 775 storage
+chown -R $WWWUSER:$WWWGROUP storage
+
+# Run composer install with optimization flags
+echo "Installing Composer dependencies..."
+if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
+    composer install --optimize-autoloader --no-dev --no-scripts
+    composer dump-autoload --optimize
+else
+    gosu $WWWUSER composer install --optimize-autoloader --no-dev --no-scripts
+    gosu $WWWUSER composer dump-autoload --optimize
+fi
+
+# Run npm install with cache optimization
+echo "Installing NPM dependencies..."
+if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
+    npm ci --prefer-offline --no-audit
+    cd whatsapp-server && npm ci --prefer-offline --no-audit && cd ..
+else
+    gosu $WWWUSER bash -c 'npm ci --prefer-offline --no-audit && cd whatsapp-server && npm ci --prefer-offline --no-audit && cd ..'
+fi
+
+# Generate application key
+echo "Checking APP_KEY..."
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+if [ -z "$APP_KEY" ]; then
+    echo "No APP_KEY found. Generating..."
+    
+    if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
+        php artisan key:generate --force
+    else
+        gosu "${WWWUSER}" php artisan key:generate --force
+    fi
+else
+    echo "APP_KEY already exists!"
+fi
+
+# Wait for database to be ready
+echo "Waiting for database connection..."
+until php artisan tinker --execute="DB::connection()->getPdo();" 2>/dev/null; do
+    echo "Waiting for database..."
+    sleep 2
+done
+
+# Run migrations and seeders only in development
+if [ "${APP_ENV:-local}" = "local" ]; then
+    echo "Running migrations and seeders..."
+    if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
+        php artisan migrate --force
+        php artisan db:seed --force
+    else
+        gosu $WWWUSER php artisan migrate --force
+        gosu $WWWUSER php artisan db:seed --force
+    fi
+fi
+
+# Clear and cache config for better performance
+echo "Optimizing Laravel..."
+if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
+    php artisan config:cache
+    php artisan route:cache
+    php artisan view:cache
+else
+    gosu $WWWUSER php artisan config:cache
+    gosu $WWWUSER php artisan route:cache
+    gosu $WWWUSER php artisan view:cache
+fi
+
+if [ $# -gt 0 ]; then
+    if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
+        exec "$@"
+    else
+        exec gosu $WWWUSER "$@"
+    fi
+else
+    exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+fi

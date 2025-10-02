@@ -1,0 +1,52 @@
+# Development overrides for docker-compose.yml
+# Run with: docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+
+services:
+    laravel.test:
+        environment:
+            - APP_ENV=local
+            - APP_DEBUG=true
+            - XDEBUG_MODE=${SAIL_XDEBUG_MODE:-off}
+            - PHP_OPCACHE_VALIDATE_TIMESTAMPS=1
+        volumes:
+            # Mount source code for development
+            - '.:/var/www/html'
+            # Exclude node_modules and vendor for better performance
+            - '/var/www/html/node_modules'
+            - '/var/www/html/vendor'
+            # Development specific mounts
+            - './docker/sail/php-dev.ini:/etc/php/8.4/cli/conf.d/99-sail-dev.ini'
+        ports:
+            # Expose additional ports for debugging
+            - '${XDEBUG_PORT:-9003}:9003'
+
+    mariadb:
+        ports:
+            - '${FORWARD_DB_PORT:-3306}:3306'
+        volumes:
+            # Use local directory for development data persistence
+            - './data/mysql:/var/lib/mysql'
+        environment:
+            # Less strict settings for development
+            MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+
+    redis:
+        ports:
+            - '${FORWARD_REDIS_PORT:-6379}:6379'
+        volumes:
+            # Use local directory for development data persistence
+            - './data/redis:/data'
+        command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes --save 60 1
+
+    # Development tools
+    mailhog:
+        image: 'mailhog/mailhog:latest'
+        ports:
+            - '${FORWARD_MAILHOG_PORT:-1025}:1025'
+            - '${FORWARD_MAILHOG_DASHBOARD_PORT:-8025}:8025'
+        networks:
+            - sail
+
+networks:
+    sail:
+        driver: bridge

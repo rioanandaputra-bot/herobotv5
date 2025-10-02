@@ -1,0 +1,55 @@
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Dependencies
+node_modules/
+vendor/
+composer.lock
+package-lock.json
+
+# Development files
+.env*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Laravel
+storage/app/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*
+
+# Build artifacts
+public/hot
+public/storage
+public/css/
+public/js/
+public/mix-manifest.json
+
+# Testing
+tests/
+.phpunit.result.cache
+coverage/
+
+# Development tools
+phpunit.xml
+.php_cs
+.php_cs.cache
